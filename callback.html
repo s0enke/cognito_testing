@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cognito OIDC Sample</title>
+    <script src="https://apis.google.com/js/client:platform.js"></script>
+    <meta name="google-signin-client_id" content="74611431969-r0a42v95405hpgvm4bjr9d0u3ndab4lv.apps.googleusercontent.com"></meta>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.0.16.min.js"></script>
+    <script type="text/javascript" src="lib/axios/dist/axios.standalone.js"></script>
+    <script type="text/javascript" src="lib/CryptoJS/rollups/hmac-sha256.js"></script>
+    <script type="text/javascript" src="lib/CryptoJS/rollups/sha256.js"></script>
+    <script type="text/javascript" src="lib/CryptoJS/components/hmac.js"></script>
+    <script type="text/javascript" src="lib/CryptoJS/components/enc-base64.js"></script>
+    <script type="text/javascript" src="lib/moment/moment.js"></script>
+    <script type="text/javascript" src="lib/url-template/url-template.js"></script>
+    <script type="text/javascript" src="lib/apiGatewayCore/sigV4Client.js"></script>
+    <script type="text/javascript" src="lib/apiGatewayCore/apiGatewayClient.js"></script>
+    <script type="text/javascript" src="lib/apiGatewayCore/simpleHttpClient.js"></script>
+    <script type="text/javascript" src="lib/apiGatewayCore/utils.js"></script>
+    <script type="text/javascript" src="apigClient.js"></script>
+</head>
+<body onload="callback()">
+    <h1>Sample App - Amazon Cognito and OpenID Connect</h1>
+    <p>Results after authentication:</p>
+    <p>
+        <span id="results" style="color:#FF0000"></span>
+    </p>
+</body>
+<script type="text/javascript">          
+    // Callback function called on page load 
+    function callback() {
+        // Capture the redirected URL
+        var url = window.location.href;
+ 
+        // Check if there was an error parameter
+        var error = url.match('error=([^&]*)')
+        if (error) {
+            // If so, extract the error description and display it
+            var description = url.match('error_description=([^&]*)')
+            printMessage('Error: ' + error[1] + '<br>Description: ' + description[1] + '</br>');
+            return;
+        }
+ 
+        // Extract id token from the id_token parameter
+        var match = url.match('id_token=([^&]*)');
+        if (match) {
+            var id_token = match[1]; // String captured by ([^&]*)
+ 
+            // Make AWS request using the id token
+            if (id_token) {
+                makeCognitoRequest(id_token);
+            }else{
+                printMessage('Error: Could not retrieve id token from the URL');
+            }
+        }else{
+            printMessage('Error: There was no id token in the URL');
+        }
+    }
+ 
+    // Make AWS request using Cognito
+    function makeCognitoRequest(id_token) {
+        var aws_region = 'eu-west-1';
+        var provider_url = 'accounts.google.com'; 
+        var logins = {};
+        logins[provider_url] = id_token;
+         
+        // **** REPLACE account_id, role_arn, pool_id, and table_name WITH YOUR OWN VALUES ****
+        var account_id = '336007894976';
+        var pool_id = 'eu-west-1:196f6151-26f7-4b62-8ff8-41b6a4849994';
+        var table_name = 'ProductCatalog';
+        var role_arn = 'arn:aws:iam::336007894976:role/Cognito_testingUnauth_Role';
+        // Parameters required for CognitoIdentityCredentials
+        var params = {
+            AccountId: account_id,
+            IdentityPoolId: pool_id,
+            Logins: logins,
+	    RoleArn: role_arn,
+        };
+ 
+        // Amazon Cognito region
+        AWS.config.region = aws_region;
+ 
+        // Initialize CognitoIdentityCredentials
+        AWS.config.credentials = new AWS.CognitoIdentityCredentials(params);
+ 
+        // Cognito credentials 
+        AWS.config.credentials.get(function (err) {
+            if (err) {  // an error occurred
+                printMessage("aaa"+err);
+            }else{      // successful response
+ 
+                // DynamoDB client will automatically use the Cognito identity credentials provider
+	console.log(AWS.config.credentials);
+
+var cognitoidentity = new AWS.CognitoIdentity();
+var params = {
+  IdentityId: AWS.config.credentials.identityId, /* required */
+  Logins: {
+    'accounts.google.com': id_token,
+  }
+};
+cognitoidentity.getOpenIdToken(params, function(err, data) {
+  if (err) console.log(err, err.stack); // an error occurred
+  else     console.log(data);           // successful response
+});
+
+var apigClient = apigClientFactory.newClient({
+    accessKey: AWS.config.credentials.accessKeyId,
+    secretKey: AWS.config.credentials.secretAccessKey,
+    sessionToken: AWS.config.credentials.sessionToken, //OPTIONAL: If you are using temporary credentials you must include the session token
+    region: 'eu-west-1' // OPTIONAL: The region where the API is deployed, by default this parameter is set to us-east-1
+});
+
+apigClient.testingGet()
+    .then(function(result){
+        //This is where you would put a success callback
+console.log(result);
+    }).catch( function(result){
+        //This is where you would put an error callback
+    });
+            }
+        });      
+    }
+ 
+    // Print messages  
+    function printMessage(messageString){
+       document.getElementById("results").innerHTML = messageString;
+    }    
+</script>
+</html>

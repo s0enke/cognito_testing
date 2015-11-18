@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cognito OIDC Sample</title>
+</head>
+<body>
+    <h1>Sample App - Amazon Cognito and OpenID Connect</h1>
+ 
+    <button onclick="login()">Sign In with Google</button>   
+</body>
+<script type="text/javascript">
+ 
+function login() {
+    var client_id = '74611431969-r0a42v95405hpgvm4bjr9d0u3ndab4lv.apps.googleusercontent.com';
+    var redirect_uri = 'http://127.0.0.1/callback.html';
+     
+    // Construct the redirect URL
+    // For getting an id token, response_type of 
+    // "token id_token" (note the space), scope of 
+    // "openid", and some value for nonce is required.
+    // client_id must be the consumer key of the connected app.
+    // redirect_uri must match the callback URL configured for 
+    // the connected app.
+    var url = 
+        'https://accounts.google.com/o/oauth2/auth'
+        + '?response_type=token id_token'
+        + '&scope=email'
+        + '&nonce=abc'
+        + '&client_id=' + client_id 
+        + '&redirect_uri=' + redirect_uri;
+ 
+    window.location.replace(url);
+}
+ 
+</script>
+</html>
